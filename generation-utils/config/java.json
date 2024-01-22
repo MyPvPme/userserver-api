@@ -1,0 +1,17 @@
+{
+  "apiPackage": "me.mypvp.userserver.api.client",
+  "invokerPackage": "me.mypvp.userserver.api.client",
+  "modelPackage": "me.mypvp.userserver.api.client.model",
+  "artifactDescription": "Userserver core API client for java",
+  "artifactId": "userserver-api-client-java",
+  "artifactUrl": "https://mypvpme/userserver/api/clients/userserver-api-client-java",
+  "developerEmail": "jan.hecker@mypvp.me",
+  "developerName": "Jan Hecker",
+  "developerOrganization": "MyPvP.ME",
+  "developerOrganizationUrl": "https://mypvp.me",
+  "groupId": "me.mypvp",
+  "library": "okhttp-gson",
+  "legacyDiscriminatorBehavior": false,
+  "dateLibrary": "java8",
+  "java8": true
+}

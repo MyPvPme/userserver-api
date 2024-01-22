@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package files;
+
+
+service FilesService {
+    rpc GetFiles(FilePath) returns (FileDetailsList);
+    rpc GetFile(GetFile) returns (stream FileChunk);
+    rpc GetFolder(FilePath) returns (stream FileChunk);
+    rpc DeleteFile(FilePath) returns (OperationStatusResponse);
+    rpc UploadFile(stream FileChunk) returns (OperationStatusResponse);
+    rpc UploadFileChunk(stream FileChunk) returns (OperationStatusResponse);
+    rpc CompleteChunkUpload(CompleteChunk) returns (OperationStatusResponse);
+    rpc DeleteTempFolder(FilePath) returns (OperationStatusResponse);
+    rpc GetFileStats(FilePath) returns (FileDetails);
+    rpc CreateFolder(FilePath) returns (OperationStatusResponse);
+    rpc RenameFile(FilePaths) returns (OperationStatusResponse);
+    rpc WriteFile(FileChunk) returns (OperationStatusResponse);
+    rpc MoveServerToS3(ServerId) returns (OperationStatusResponse);
+    rpc LoadServerFromS3(ServerId) returns (OperationStatusResponse);
+}
+
+enum FileType {
+    FILE_TYPE_FILE = 0;
+    FILE_TYPE_FOLDER = 1;
+}
+
+enum OperationStatus {
+    OPERATION_STATUS_OK = 0;
+    OPERATION_STATUS_SYSTEM_ERROR = 1;
+}
+
+message OperationStatusResponse {
+    OperationStatus operation_status = 0;
+    optional string sentry_event_id = 1;
+}
+
+message FileDetailsList {
+    repeated FileDetails file_details = 0;
+}
+
+message FileDetails {
+    bool exists = 0;
+    uint64 size = 1;
+    string name = 2;
+    FileType file_type = 3;
+    int64 created = 4;
+    int64 changed = 5;
+    string path = 6;
+}
+
+message FilePath {
+    string path = 0;
+}
+
+message GetFile {
+    string path = 0;
+    optional uint32 start = 1;
+}
+
+message FileChunk {
+    string path = 0;
+    bytes content = 1;
+}
+
+message CompleteChunk {
+    string path = 0;
+    string destination = 1;
+}
+
+message FilePaths {
+    string first_path = 0;
+    string second_path = 1;
+}
+
+message ServerId {
+    uint32 id = 0;
+}

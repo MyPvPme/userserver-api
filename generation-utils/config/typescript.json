@@ -1,0 +1,5 @@
+{
+  "platform": "node",
+  "npmName": "@mypvp/userserver-api-client-typescript",
+  "npmRepository": "https://repo.mypvp.me/repository/npm-hosted/"
+}

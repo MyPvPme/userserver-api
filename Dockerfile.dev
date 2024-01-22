@@ -1,0 +1,26 @@
+FROM node:18-alpine
+
+ARG NPM_MAIL
+ARG NPM_AUTH_TOKEN
+
+WORKDIR /usr/app
+
+RUN mkdir "/temp"
+
+COPY package*.json ./
+
+COPY .npmnrc.docker .npmrc
+
+CMD npm -v
+
+RUN npm i
+
+RUN rm -f .npmrc
+
+COPY . .
+
+CMD npm run prebuild
+
+EXPOSE 3000
+
+ENTRYPOINT npm run start:rest-api:dev

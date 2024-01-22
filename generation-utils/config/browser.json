@@ -1,0 +1,5 @@
+{
+  "platform": "browser",
+  "npmName": "@mypvp/userserver-api-client-browser",
+  "npmRepository": "https://repo.mypvp.me/repository/npm-hosted/"
+}

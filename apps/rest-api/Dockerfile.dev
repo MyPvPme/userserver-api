@@ -1,0 +1,22 @@
+FROM node:14-alpine
+
+ARG NPM_BASIC_AUTH
+ARG NPM_BASIC_AUTH_MAIL
+
+WORKDIR /usr/app
+
+COPY package*.json ./
+
+COPY .npmnrc.docker .npmrc
+
+RUN npm i
+
+RUN rm -f .npmrc
+
+COPY . .
+
+CMD npm run prebuild
+
+EXPOSE 3000
+
+ENTRYPOINT npm run start:rest-api:debug

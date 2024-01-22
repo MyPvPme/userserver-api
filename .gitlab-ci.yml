@@ -1,0 +1,194 @@
+image: node:18-alpine
+
+stages:
+  - pre-build
+  - lint
+  - test
+  - build
+  - deploy
+
+.npm:
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - .npm/
+      - .npmrc
+    policy: pull
+  before_script:
+    - rm .npmrc
+    - echo "registry=https://repo.mypvp.me/repository/npm/" > ".npmrc"
+    - echo "always-auth=true" >> ".npmrc"
+    - echo "//repo.mypvp.me/repository/npm/:_authToken=$NPM_AUTH_TOKEN" >> ".npmrc"
+    - npm -v
+    - npm ci --cache .npm --prefer-offline --production=false
+
+variables: &test_variables
+  # For Services
+  MYSQL_DATABASE: userserver_api
+  MYSQL_ROOT_PASSWORD: userserver_api
+  # For API
+  DATABASE_TYPE: mysql
+  DATABASE_HOST: mysql
+  DATABASE_PORT: 3306
+  DATABASE_USERNAME: root
+  DATABASE_PASSOWRD: userserver_api
+  DATABASE_NAME: userserver_api
+  USERSERVER_AUTH_REDIS: redis://redis/1
+  CORS_ALLOWED_ORIGINS: http://localhost:8080
+  COOKIE_DOMAIN: localhost
+  INFLUXDB_URL: http://localhost:8080
+
+npm_install:
+  stage: pre-build
+  extends: .npm
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - .npm/
+    policy: pull-push
+  script:
+    - npm ci --cache .npm --prefer-offline --production=false
+  tags:
+    - userserver-api
+
+lint:
+  stage: lint
+  extends: .npm
+  script:
+    - npm run lint:test
+  except:
+    - master
+    - tags
+  tags:
+    - userserver-api
+
+format:
+  stage: lint
+  extends: .npm
+  script:
+    - npm run format:test
+  except:
+    - master
+    - tags
+  tags:
+    - userserver-api
+
+build-image-test:
+  stage: test
+  image: docker:latest
+  script:
+    - docker build --build-arg NPM_AUTH_TOKEN=$NPM_AUTH_TOKEN --build-arg NPM_MAIL=$NPM_BASIC_AUTH_MAIL .
+  except:
+    - tags
+    - master
+  tags:
+    - userserver-api
+
+build-clients-test:
+  stage: test
+  extends: .npm
+  image: timbru31/java-node:8-alpine-jdk-hydrogen
+  services:
+    - name: redis
+      alias: redis
+    - name: mysql
+      alias: mysql
+  before_script:
+    - 'command -v ssh-agent >/dev/null || ( apk update -q && apk add openssh-client git -q )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_GITLAB_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - git config --global user.email "admin@mypvp.me"
+    - git config --global user.name "MyPvPnet"
+    - node -v
+    - npm i -g @nestjs/cli
+    - rm .npmrc
+    - echo "@mypvp:registry=https://repo.mypvp.me/repository/npm/" > ".npmrc"
+    - echo "always-auth=true" >> ".npmrc"
+    - echo "//repo.mypvp.me/repository/npm/:_authToken=$NPM_AUTH_TOKEN" >> ".npmrc"
+    - npm ci --cache .npm --prefer-offline --production=false
+  script:
+    - npm run build:all
+    - npm run start:rest-api:prod
+    - npm run generate-clients:test
+  variables:
+    <<: *test_variables
+    GENERATE_OPENAPI_ONLY: "true"
+  except:
+    - tags
+    - master
+  tags:
+    - userserver-api
+
+build-dev:
+  stage: build
+  image: docker:latest
+  script:
+    - docker login -u $MYPVP_REPO_USER -p $MYPVP_REPO_PASS docker-registry.mypvp.me
+    - docker build . -t docker-registry.mypvp.me/userserver-api:master --build-arg NPM_AUTH_TOKEN=$NPM_AUTH_TOKEN --build-arg NPM_MAIL=$NPM_BASIC_AUTH_MAIL
+    - docker push docker-registry.mypvp.me/userserver-api:master
+  only:
+    - master
+  tags:
+    - userserver-api
+
+build-prod:
+  stage: build
+  image: docker:latest
+  script:
+    - docker login -u $MYPVP_REPO_USER -p $MYPVP_REPO_PASS docker-registry.mypvp.me
+    - docker build . -t docker-registry.mypvp.me/userserver-api:$CI_COMMIT_TAG --build-arg NPM_AUTH_TOKEN=$NPM_AUTH_TOKEN --build-arg NPM_MAIL=$NPM_BASIC_AUTH_MAIL
+    - docker push docker-registry.mypvp.me/userserver-api:$CI_COMMIT_TAG
+    - docker tag docker-registry.mypvp.me/userserver-api:$CI_COMMIT_TAG docker-registry.mypvp.me/userserver-api:latest
+    - docker push docker-registry.mypvp.me/userserver-api:latest
+  only:
+    - tags
+  tags:
+    - userserver-api
+
+generate_clients:
+  stage: build
+  image: timbru31/java-node:8-alpine-jdk-hydrogen
+  extends: .npm
+  services:
+    - name: redis
+      alias: redis
+    - name: mysql
+      alias: mysql
+  before_script:
+    - 'command -v ssh-agent >/dev/null || ( apk update -q && apk add openssh-client git -q )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_GITLAB_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - git config --global user.email "admin@mypvp.me"
+    - git config --global user.name "MyPvPnet"
+    - node -v
+    - rm .npmrc
+    - echo "@mypvp:registry=https://repo.mypvp.me/repository/npm/" > ".npmrc"
+    - echo "always-auth=true" >> ".npmrc"
+    - echo "//repo.mypvp.me/repository/npm/:_authToken=$NPM_AUTH_TOKEN" >> ".npmrc"
+    - npm ci --cache .npm --prefer-offline --production=false
+    - npm i -g @nestjs/cli
+  script:
+    - npm run build:all
+    - npm run start:rest-api:prod
+    - npm run generate-clients
+  variables:
+    <<: *test_variables
+    GENERATE_OPENAPI_ONLY: "true"
+  only:
+    - tags
+  tags:
+    - userserver-api
+
+deploy-production:
+  image: "curlimages/curl"
+  stage: deploy
+  script:
+    - 'curl -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT" -H "CF-Access-Client-Secret: $CF_ACCESS_SECRET" -X POST https://admin.mypvp.me/portainer/api/webhooks/91b7284a-6d57-4d77-a7a3-d0388b650164'
+    - 'curl -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT" -H "CF-Access-Client-Secret: $CF_ACCESS_SECRET" -X POST https://admin.mypvp.me/portainer/api/webhooks/461d4e7b-00fd-4f3f-82f7-87928c062c4f'
+    - 'curl -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT" -H "CF-Access-Client-Secret: $CF_ACCESS_SECRET" -X POST https://admin.mypvp.me/portainer/api/webhooks/cd212bf8-c4e7-4173-bc8d-8514587f7260'
+  only:
+    - tags

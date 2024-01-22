@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package extensions;
+
+service ExtensionsService {
+    rpc InstallExtensionVersion(ExtensionVersionAction) returns (OperationStatusResponse);
+    rpc UninstallExtensionVersion(ExtensionVersionAction) returns (OperationStatusResponse);
+    rpc GetAllSpigotPlugins(ServerId) returns (Plugins);
+}
+
+message ServerId {
+    int32 id = 0;
+}
+
+message ExtensionVersionAction {
+    ExtensionVersion extension_version = 0;
+    ServerId server_id = 1;
+}
+
+message ExtensionVersion {
+    int32 id = 0;
+    repeated ExtensionFile files = 1;
+}
+
+enum FileType {
+    FILE_TYPE_FILE = 0;
+    FILE_TYPE_FOLDER = 1;
+}
+
+message ExtensionFile {
+    string filename = 0;
+    string destination = 1;
+    FileType file_type = 2;
+}
+
+enum OperationStatus {
+    OPERATION_STATUS_OK = 0;
+    OPERATION_STATUS_SYSTEM_ERROR = 1;
+}
+
+message OperationStatusResponse {
+    OperationStatus operation_status = 0;
+    optional string sentry_event_id = 1;
+}
+
+message Plugins {
+    repeated Plugin plugins = 0;
+}
+
+message Plugin {
+    string file_name = 0;
+    string plugin_yml = 1;
+    string comment = 2;
+    uint64 crc = 3;
+}

@@ -1,0 +1,92 @@
+version: '3.8'
+services:
+  files-api:
+    hostname: 'storage-node-mypvp-userserver-2'
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        NPM_MAIL: ${NPM_MAIL}
+        NPM_AUTH_TOKEN: ${NPM_AUTH_TOKEN}
+    depends_on:
+      - redis
+      - mysql
+    volumes:
+      - '/usr/app/node_modules'
+      - '/usr/app/dist'
+      - 'C:/temp/TEST:/home/servers'
+      - './:/usr/app/'
+    entrypoint: 'npm run start:files-api:debug'
+    env_file:
+      - .env
+    networks:
+      - userserver_api_network
+
+  container-api:
+    hostname: runner-node-mypvp-userserver-2
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        NPM_MAIL: ${NPM_MAIL}
+        NPM_AUTH_TOKEN: ${NPM_AUTH_TOKEN}
+    depends_on:
+      - redis
+      - mysql
+    volumes:
+      - '/usr/app/node_modules'
+      - '/usr/app/dist'
+      - './:/usr/app/'
+    entrypoint: 'npm run start:container-api:debug'
+    env_file:
+      - .env
+    networks:
+      - userserver_api_network
+
+  rest-api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.dev
+      args:
+        NPM_MAIL: ${NPM_MAIL}
+        NPM_AUTH_TOKEN: ${NPM_AUTH_TOKEN}
+    ports:
+      - '3000:3000'
+      - '9229:9229'
+    depends_on:
+      - files-api
+    volumes:
+      - '/usr/app/node_modules'
+      - '/usr/app/dist'
+      - './:/usr/app/'
+    env_file:
+      - .env
+    networks:
+      - userserver_api_network
+  redis:
+    container_name: userserver-api-redis
+    image: redis
+    restart: always
+    networks:
+      - userserver_api_network
+  mysql:
+    container_name: userserver-api-mysql
+    image: mysql
+    restart: always
+    ports:
+      - '3306:3306'
+    volumes:
+      - database:/var/lib/mysql
+    networks:
+      - userserver_api_network
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DATABASE_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DATABASE_NAME}
+      - MYSQL_USER=${DATABASE_USERNAME}
+      - MYSQL_PASSWORD=${DATABASE_PASSOWRD}
+    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_general_ci']
+
+networks:
+  userserver_api_network:
+volumes:
+  database:

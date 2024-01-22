@@ -1,0 +1,6 @@
+{
+  "projectName": "@mypvp/userserver-api-client-javascript",
+  "usePromises": true,
+  "npmRepository": "https://repo.mypvp.me/repository/npm-hosted/",
+  "projectDescription": "Client for the userserver api"
+}

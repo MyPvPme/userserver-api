@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package containers;
+
+service ContainersService {
+    rpc GetStatus(Empty) returns (stream StatusResponse);
+
+    rpc StartContainer(StartContainer) returns (StartContainerResponse);
+    rpc StopContainer(StopContainer) returns (OperationStatusResponse);
+    rpc ExecCommandToContainer(ExecCommandToContainer) returns (OperationStatusResponse);
+    rpc GetRunningContainers(Empty) returns (ContainersList);
+    rpc AttachToContainer(stream ConsoleData) returns (stream ConsoleData);
+    rpc GetNodeStats(Empty) returns (NodeStats);
+}
+
+message ConsoleData {
+    bytes message = 0;
+}
+
+message StatusResponse {
+    int32 server_id = 0;
+    optional StatusChange status_change = 1;
+    optional Stats stats = 2;
+}
+
+message StatusChange {
+    ContainerStatus status = 1;
+}
+
+message Stats {
+    int64 ram = 0;
+    double cpu = 1;
+}
+
+message NodeStats {
+    int64 total_ram = 0;
+    int64 free_ram = 1;
+    int64 cpu_usage = 2;
+}
+
+enum ContainerStatus {
+    CONTAINER_STATUS_STARTED = 0;
+    CONTAINER_STATUS_STOPPED = 1;
+    CONTAINER_STATUS_EXITED = 2;
+    CONTAINER_STATUS_STARTING = 3;
+    CONTAINER_STATUS_STOPPING = 4;
+    CONTAINER_STATUS_COULD_NOT_STOP = 5;
+    CONTAINER_STATUS_COULD_NOT_START = 6;
+}
+
+message StartContainer {
+    int32 server_id = 0;
+    optional int64 ram = 1;
+    string start_command = 2;
+    string image = 3;
+    map<string, string> env = 4;
+    string storage_node = 5;
+}
+
+message StopContainer {
+    int32 server_id = 0;
+}
+
+message ExecCommandToContainer {
+    int32 server_id = 0;
+    string command = 1;
+}
+
+message StartContainerResponse {
+    OperationStatus operation_status = 0;
+    optional string sentry_event_id = 1;
+    optional string container_id = 2;
+}
+
+message Empty {
+
+}
+
+message OperationStatusResponse {
+    OperationStatus operation_status = 0;
+    optional string sentry_event_id = 1;
+}
+
+enum OperationStatus {
+    OPERATION_STATUS_OK = 0;
+    OPERATION_STATUS_SYSTEM_ERROR = 1;
+}
+
+message ContainersList {
+    repeated int32 containers = 0;
+}

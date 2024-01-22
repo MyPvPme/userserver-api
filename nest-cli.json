@@ -1,0 +1,67 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/rest-api/src",
+  "compilerOptions": {
+    "webpack": true,
+    "assets": ["**/*.proto"],
+    "watchAssets": true,
+    "tsConfigPath": "apps/rest-api/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/rest-api",
+  "projects": {
+    "rest-api": {
+      "type": "application",
+      "root": "apps/rest-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/rest-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/rest-api/tsconfig.app.json",
+        "plugins": [
+          {
+            "name": "@nestjs/swagger",
+            "options": {
+              "introspectComments": true
+            }
+          }
+        ]
+      }
+    },
+    "files-api": {
+      "type": "application",
+      "root": "apps/files-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/files-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/files-api/tsconfig.app.json"
+      }
+    },
+    "container-api": {
+      "type": "application",
+      "root": "apps/container-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/container-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/container-api/tsconfig.app.json"
+      }
+    },
+    "services": {
+      "type": "library",
+      "root": "libs/services",
+      "entryFile": "index",
+      "sourceRoot": "libs/services/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/services/tsconfig.lib.json"
+      }
+    },
+    "type-utils": {
+      "type": "library",
+      "root": "libs/type-utils",
+      "entryFile": "index",
+      "sourceRoot": "libs/type-utils/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/type-utils/tsconfig.lib.json"
+      }
+    }
+  }
+}
